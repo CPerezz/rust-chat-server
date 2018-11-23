@@ -43,12 +43,30 @@ fn main () {
                     Ok(_) => {
                         let msg = buff.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
                         let msg = String::from_utf8(msg).expect("Invalid utf8 message");
+
+                        println!("{}: {:?}", addr, msg);
+                        tx.send(msg).expect("failed to send msg to rx");
+                    }, 
+                    Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
+                    Err(_) => {
+                        println!("closing connection with: {}", addr);
+                        break;
                     }
                 }
+
+                //sleep();
             });
-
         }
+
+        if let Ok(msg) = rx.try_recv() {
+            clients = clients.into_iter().filter_map(|mut client| {
+                let mut buff = msg.clone().into_bytes();
+                buff.resize(MSG_SIZE, 0);
+
+                client.write_all(&buff).map(|_| client).ok()
+            }).collect::<Vec<_>>();
+        }
+
+        //sleep();
     }
-
-
 }
