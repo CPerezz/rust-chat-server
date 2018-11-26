@@ -1,6 +1,7 @@
 extern crate dotenv;
 
 use std::io::{ErrorKind, Read, Write};
+use std::time::Duration;
 use std::net::TcpListener;
 use std::sync::mpsc;
 use std::thread;
@@ -8,7 +9,7 @@ use dotenv::dotenv;
 use std::env;
 mod utils;
 
-const MSG_SIZE: usize = 32;
+const MSG_SIZE: usize = 20;
 
 fn main () {
     //Charge envoirment variables.
@@ -29,7 +30,7 @@ fn main () {
     loop{
         //If the recieved connection from the listener contains a correct value, is accepted.
         if let Ok((mut socket, addr)) = server.accept() {
-            println!("Client {:?} connected", addr);
+            println!("Client {:?} connected to the chhanel!", addr);
 
             let tx = tx.clone();
             //Clone the socket to push it into a thread.
@@ -39,34 +40,36 @@ fn main () {
                 //Create a buffer to store the msges.
                 let mut buff = vec![0; MSG_SIZE];
 
-                match socket.read_exact(&mut buff) {
+                match socket.read(&mut buff) {
                     Ok(_) => {
-                        let msg = buff.into_iter().take_while(|&x| x != 0).collect::<Vec<_>>();
+                        let msg = buff.clone().into_iter().take_while(|&x| x!= 0).collect::<Vec<_>>();
+
+                        println!("\nMSG as Bytes:   {:?}", msg.clone());
                         let msg = String::from_utf8(msg).expect("Invalid utf8 message");
 
-                        println!("{}: {:?}", addr, msg);
+                        println!("\n{}: {:?}", addr, msg);
                         tx.send(msg).expect("failed to send msg to rx");
                     }, 
                     Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
                     Err(_) => {
-                        println!("closing connection with: {}", addr);
+                        println!("\nClient: {} left the channel.", addr);
                         break;
                     }
                 }
 
-                //sleep();
+                thread::sleep(Duration::from_millis(200));
             });
         }
 
         if let Ok(msg) = rx.try_recv() {
             clients = clients.into_iter().filter_map(|mut client| {
                 let mut buff = msg.clone().into_bytes();
-                buff.resize(MSG_SIZE, 0);
+                buff.clone().resize(buff.len(), 0);
 
                 client.write_all(&buff).map(|_| client).ok()
             }).collect::<Vec<_>>();
         }
 
-        //sleep();
+        thread::sleep(Duration::from_millis(200));
     }
 }
