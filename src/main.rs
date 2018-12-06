@@ -9,7 +9,7 @@ use dotenv::dotenv;
 use std::env;
 mod utils;
 
-const MSG_SIZE: usize = 20;
+const MSG_SIZE: usize = 32;
 
 fn main () {
     //Charge envoirment variables.
@@ -44,7 +44,15 @@ fn main () {
                 //Hear socket entries from sender an match it with a Result.
                 match socket.read(&mut buff) {
 
-                    //If read retunrs Ok Result
+                    //a read() syscall on a socket that has been closed on the other end will return 0 bytes read, 
+                    //but no error, which should translate to Ok(0) in Rust. 
+                    //But this may only apply when the other end closed the connection cleanly.
+                    Ok(0) => {
+                        println!("\nClient: {} left the channel.", addr);
+                        break;
+                    }
+
+                    //Handle when we do not read an empty socket
                     Ok(_) => {
                         //Set the buffer as an Iretartor and take it's elements while the condition retunrs true. Finally returns a Vec of type T
                         let msg = buff.clone().into_iter().take_while(|&x| x!= 0).collect::<Vec<_>>();
@@ -54,12 +62,14 @@ fn main () {
 
                         println!("\n{}: {:?}", addr, msg);
                         sender.send(msg).expect("failed to send msg to reciever");
-                    }, 
+                    },
+                    //Handle reading errors!
                     Err(ref err) if err.kind() == ErrorKind::WouldBlock => (),
                     Err(_) => {
                         println!("\nClient: {} left the channel.", addr);
                         break;
                     }
+                    
                 }
 
                 thread::sleep(Duration::from_millis(200));
@@ -68,7 +78,7 @@ fn main () {
         //A bit of functionall programming to send the message to all the other chat members.
         if let Ok(msg) = reciever.try_recv() {
             clients = clients.into_iter().filter_map(|mut client| {
-                let mut buff = msg.clone().into_bytes();
+                let buff = msg.clone().into_bytes();
                 buff.clone().resize(buff.len(), 0);
 
                 client.write_all(&buff).map(|_| client).ok()
