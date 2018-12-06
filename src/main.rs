@@ -65,7 +65,7 @@ fn main () {
                 thread::sleep(Duration::from_millis(200));
             });
         }
-
+        //A bit of functionall programming to send the message to all the other chat members.
         if let Ok(msg) = reciever.try_recv() {
             clients = clients.into_iter().filter_map(|mut client| {
                 let mut buff = msg.clone().into_bytes();
