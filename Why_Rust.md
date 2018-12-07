@@ -45,7 +45,6 @@ It also has Crates.io!!!! A library collection repository like NPM where you can
 What can now happen..
 
 <blockquote class="twitter-tweet" data-lang="ca"><p lang="en" dir="ltr">I love Rust.   But I feel that convincing people of its value is like convincing people to go vegan.   Everyone nods and respects you, but don’t really care and keep eating sausages.</p>&mdash; Miguel de Icaza (@migueldeicaza) <a href="https://twitter.com/migueldeicaza/status/1063575250485555208?ref_src=twsrc%5Etfw">16 de novembre de 2018</a></blockquote>
-<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
 
 
 #### Let's make it visual with three different examples:
